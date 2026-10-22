@@ -83,7 +83,7 @@ jobs:
           plist="$app/Info.plist"
           executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")
           test -f "$app/$executable"
-          lipo -verify_arch arm64 "$app/$executable"
+          lipo "$app/$executable" -verify_arch arm64
           /usr/libexec/PlistBuddy -c 'Print :UIDeviceFamily' "$plist" | grep -Eq '^[[:space:]]*2[[:space:]]*$'
           /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' "$plist" | grep -q '[^[:space:]]'
           test -f "$GITHUB_WORKSPACE/source/LICENSE"

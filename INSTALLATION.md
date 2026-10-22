@@ -8,8 +8,8 @@ Dieses Modell besitzt LiDAR. Die Original-App unterstützt iOS/iPadOS ab Version
 Das öffentliche Repository [psydemekum/house-capture-ipad](https://github.com/psydemekum/house-capture-ipad)
 ist eingerichtet. Der erste Build scheiterte an der Swift-Typableitung in
 `CoverageEngine.swift:760`. Ein kleiner Build-Patch ergänzt dort explizite Tupeltypen.
-Ein erfolgreicher macOS-Build, eine fertige IPA und ein Installationstest auf dem
-iPad stehen noch aus. Das Originalprojekt veröffentlicht
+Die App kompiliert damit erfolgreich auf dem macOS-Runner. Die Erstellung einer
+fertigen IPA und ein Installationstest auf dem iPad stehen noch aus. Das Originalprojekt veröffentlicht
 aktuell den Quellcode; seine Release-Unterlagen bestätigen keine abgeschlossene
 TestFlight- oder App-Store-Veröffentlichung.
 
