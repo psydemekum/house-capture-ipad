@@ -6,6 +6,10 @@ AltStore Classic signiert und installiert die App anschließend über einen Wind
 
 **[Installationsanleitung öffnen](INSTALLATION.md)** · **[Builds und Downloads](https://github.com/psydemekum/house-capture-ipad/actions/workflows/build-ipad.yml)**
 
+Der [Release-Build vom 22. Oktober 2026](https://github.com/psydemekum/house-capture-ipad/actions/runs/39799098288)
+ist erfolgreich. Die etwa 5 MB große IPA wurde auf Paketintegrität, Prüfsumme und
+iPad-Unterstützung geprüft. GitHub bewahrt das Download-Artefakt drei Tage auf.
+
 Scannen benötigt ein iPad mit LiDAR und mindestens iPadOS 17, beispielsweise das
 iPad Pro 12,9″ von 2020. Mit einem kostenlosen Apple-Konto muss AltStore die
 Signatur alle sieben Tage erneuern.
