@@ -1,0 +1,109 @@
+name: iPad-App bauen
+
+'on':
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ipad-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Standard-Runner sind in öffentlichen Repositories kostenlos.
+    if: github.event.repository.private == false
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      UPSTREAM_COMMIT: 31b2dc9da3fb541e501f2f0936e55b32afb70ee8
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Originalquellcode laden
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: wesbos/3d-model-anything
+          ref: ${{ env.UPSTREAM_COMMIT }}
+          persist-credentials: false
+          sparse-checkout: |
+            apps/house-capture
+            LICENSE
+          sparse-checkout-cone-mode: false
+
+      - name: Build-Werkzeuge vorbereiten
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Release für ein echtes iPad bauen
+        working-directory: apps/house-capture
+        run: |
+          set -euo pipefail
+          xcodegen generate
+          xcodebuild \
+            -project HouseCapture.xcodeproj \
+            -scheme HouseCapture \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/house-capture-build" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY= \
+            build
+
+      - name: Unsigned IPA prüfen und verpacken
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/house-capture-build/Build/Products/Release-iphoneos/HouseCapture.app"
+          plist="$app/Info.plist"
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")
+          test -f "$app/$executable"
+          lipo -verify_arch arm64 "$app/$executable"
+          /usr/libexec/PlistBuddy -c 'Print :UIDeviceFamily' "$plist" | grep -Eq '^[[:space:]]*2[[:space:]]*$'
+          /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' "$plist" | grep -q '[^[:space:]]'
+          test -f LICENSE
+          mkdir -p "$RUNNER_TEMP/ipad-package/Payload" "$GITHUB_WORKSPACE/dist"
+          ditto "$app" "$RUNNER_TEMP/ipad-package/Payload/HouseCapture.app"
+          (
+            cd "$RUNNER_TEMP/ipad-package"
+            ditto -c -k --keepParent Payload "$GITHUB_WORKSPACE/dist/3D-Model-Anything-unsigned.ipa"
+          )
+          cd "$GITHUB_WORKSPACE/dist"
+          unzip -tq 3D-Model-Anything-unsigned.ipa
+          shasum -a 256 3D-Model-Anything-unsigned.ipa > SHA256SUMS.txt
+          cp "$GITHUB_WORKSPACE/LICENSE" LICENSE-upstream.txt
+          {
+            printf 'Upstream: https://github.com/wesbos/3d-model-anything\n'
+            printf 'Commit: %s\n' "$UPSTREAM_COMMIT"
+            printf 'Build: %s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            xcodebuild -version
+            printf 'Signatur: nicht signiert; Installation über AltStore Classic.\n'
+          } > BUILD-INFO.txt
+
+      - name: App als Download bereitstellen
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: 3D-Model-Anything-iPad
+          path: dist/
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Installationshinweis anzeigen
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## iPad-App gebaut
+
+          Das Artefakt **3D-Model-Anything-iPad** herunterladen und entpacken.
+          Die enthaltene **3D-Model-Anything-unsigned.ipa** mit AltStore Classic installieren.
+          Die IPA wird erst bei der Installation mit dem eigenen Apple-Konto signiert.
+          Ein erfolgreicher Build ersetzt keinen Scan-Test auf dem iPad.
+          EOF
