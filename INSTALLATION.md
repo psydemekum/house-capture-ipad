@@ -5,23 +5,27 @@ Dieses Modell besitzt LiDAR. Die Original-App unterstützt iOS/iPadOS ab Version
 
 ## Stand
 
-Der lokale Workflow ist vorbereitet. Ein macOS-Build, eine fertige IPA und ein
-Installationstest auf dem iPad stehen noch aus. Das Originalprojekt veröffentlicht
+Das öffentliche Repository [psydemekum/house-capture-ipad](https://github.com/psydemekum/house-capture-ipad)
+ist eingerichtet. Der erste Build scheiterte an der Swift-Typableitung in
+`CoverageEngine.swift:760`. Ein kleiner Build-Patch ergänzt dort explizite Tupeltypen.
+Ein erfolgreicher macOS-Build, eine fertige IPA und ein Installationstest auf dem
+iPad stehen noch aus. Das Originalprojekt veröffentlicht
 aktuell den Quellcode; seine Release-Unterlagen bestätigen keine abgeschlossene
 TestFlight- oder App-Store-Veröffentlichung.
 
 ## App ohne eigenen Mac bauen
 
-1. Dieses kleine Build-Projekt als **öffentliches** GitHub-Repository veröffentlichen.
-   Es enthält den Workflow und diese Anleitung. Persönliche Scans gehören nicht hinein.
+1. Das [öffentliche Build-Repository](https://github.com/psydemekum/house-capture-ipad) öffnen.
+   Persönliche Scans gehören nicht hinein.
 2. Unter **Actions → iPad-App bauen → Run workflow** den Build starten.
 3. Nach einem erfolgreichen Lauf das Artefakt **3D-Model-Anything-iPad** herunterladen.
 4. Das ZIP entpacken. Es enthält `3D-Model-Anything-unsigned.ipa`, eine SHA-256-Prüfsumme,
-   die Original-Lizenz und die genaue Quellcode-/Build-Referenz.
+   die Original-Lizenz, den Build-Patch und die genaue Quellcode-/Build-Referenz.
 
 Der Workflow lädt den Originalquellcode von `wesbos/3d-model-anything`, festgelegt auf
 Commit `31b2dc9da3fb541e501f2f0936e55b32afb70ee8` vom 22. Oktober 2026.
-Er baut die unveränderte App in **Release** für echte iOS-Geräte und prüft vor dem
+Er ergänzt explizite Tupeltypen für den Swift-Compiler des Runners; die Berechnungen
+bleiben gleich. Anschließend baut er die App in **Release** für echte iOS-Geräte und prüft vor dem
 Verpacken ARM64, iPad-Unterstützung und den Kameraberechtigungstext.
 
 Verwendet wird der Standard-Runner `macos-26`. GitHub beschreibt Standard-Runner in

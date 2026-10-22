@@ -22,16 +22,32 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Build-Vorbereitung laden
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: build-tools
+          persist-credentials: false
+
       - name: Originalquellcode laden
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: wesbos/3d-model-anything
           ref: ${{ env.UPSTREAM_COMMIT }}
+          path: source
           persist-credentials: false
           sparse-checkout: |
             apps/house-capture
             LICENSE
           sparse-checkout-cone-mode: false
+
+      - name: Swift-Typableitung für den Runner vereinfachen
+        working-directory: source
+        run: |
+          set -euo pipefail
+          git apply --check "$GITHUB_WORKSPACE/build-tools/patches/swift-type-inference.patch"
+          git apply "$GITHUB_WORKSPACE/build-tools/patches/swift-type-inference.patch"
+          git diff --check
+          git diff -- apps/house-capture/HouseCapture/CoverageEngine.swift
 
       - name: Build-Werkzeuge vorbereiten
         run: |
@@ -44,7 +60,7 @@ jobs:
           xcodegen --version
 
       - name: Release für ein echtes iPad bauen
-        working-directory: apps/house-capture
+        working-directory: source/apps/house-capture
         run: |
           set -euo pipefail
           xcodegen generate
@@ -70,7 +86,7 @@ jobs:
           lipo -verify_arch arm64 "$app/$executable"
           /usr/libexec/PlistBuddy -c 'Print :UIDeviceFamily' "$plist" | grep -Eq '^[[:space:]]*2[[:space:]]*$'
           /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' "$plist" | grep -q '[^[:space:]]'
-          test -f LICENSE
+          test -f "$GITHUB_WORKSPACE/source/LICENSE"
           mkdir -p "$RUNNER_TEMP/ipad-package/Payload" "$GITHUB_WORKSPACE/dist"
           ditto "$app" "$RUNNER_TEMP/ipad-package/Payload/HouseCapture.app"
           (
@@ -80,10 +96,12 @@ jobs:
           cd "$GITHUB_WORKSPACE/dist"
           unzip -tq 3D-Model-Anything-unsigned.ipa
           shasum -a 256 3D-Model-Anything-unsigned.ipa > SHA256SUMS.txt
-          cp "$GITHUB_WORKSPACE/LICENSE" LICENSE-upstream.txt
+          cp "$GITHUB_WORKSPACE/source/LICENSE" LICENSE-upstream.txt
+          cp "$GITHUB_WORKSPACE/build-tools/patches/swift-type-inference.patch" build-compatibility.patch
           {
             printf 'Upstream: https://github.com/wesbos/3d-model-anything\n'
             printf 'Commit: %s\n' "$UPSTREAM_COMMIT"
+            printf 'Build-Patch: explizite Tupeltypen in CoverageEngine.swift.\n'
             printf 'Build: %s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
             xcodebuild -version
             printf 'Signatur: nicht signiert; Installation über AltStore Classic.\n'
